@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>YouTube description to ffmpeg cut command</title>
+        <style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    display: flex;
+    /* align-items: center; */
+    justify-content: center;
+    height: 100vh;
+}
+
+.container {
+    /* max-width: 600px; */
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+textarea {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+.buttons {
+    text-align: center;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#outputText {
+    margin-top: 20px;
+    white-space: pre-line;
+}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <textarea id="inputText" placeholder="Enter text..."></textarea>
+            <div class="buttons">
+                <button onclick="convertText()">Convert</button>
+            </div>
+            <div id="outputText"></div>
+        </div>
+        <script>
+function convertText() {
+    var inputText = document.getElementById("inputText").value;
+    var lines = inputText.split('\n');
+    var outputText = lines.map(function(line, index, array) {
+        var startTime = getStartTime(line);
+        var endTime = getNextStartTime(array, index) || "";
+        var trackName = getTrackName(line).slice(0, getTrackName(line).length - startTime.length - 1).replace(/[?？、'"‘’“”!！╲/*<>|]/g, '_');
+
+        // Set different track numbers for each track
+        var trackNumber = `${index + 1}/${array.length}`;
+
+        // Check if endTime exists before adding -to flag
+        var toFlag = endTime ? ` -to ${endTime}` : "";
+
+        return `ffmpeg -i "test.opus" -ss ${startTime}${toFlag} -metadata title="${trackName}" -metadata track="${trackNumber}"` +
+        ` -acodec copy -y "${index + 1} - ${trackName}.opus"`;
+    }).join('\n');
+    document.getElementById("outputText").innerText = outputText;
+}
+
+function getStartTime(line) {
+    var startTimeMatch = line.match(/(\d+:)?\d+:\d+/);
+    if (startTimeMatch) {
+        return startTimeMatch[0];
+    }
+    return "";
+}
+
+function getNextStartTime(lines, currentIndex) {
+    if (currentIndex < lines.length - 1) {
+        var nextLine = lines[currentIndex + 1];
+        var nextStartTimeMatch = nextLine.match(/(\d+:)?\d+:\d+/);
+        if (nextStartTimeMatch) {
+            return nextStartTimeMatch[0];
+        }
+    }
+    return "";
+}
+
+function getTrackName(line) {
+    var trackNameMatch = line.match(/\d+\.\s*(.*)/);
+    if (trackNameMatch) {
+        return trackNameMatch[1];
+    }
+    return "";
+}
+        </script>
+    </body>
+</html>
